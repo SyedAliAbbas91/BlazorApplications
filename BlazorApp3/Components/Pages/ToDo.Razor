@@ -1,0 +1,445 @@
+﻿@page "/todo-list"
+@rendermode InteractiveServer
+
+<PageTitle>To-Do List - Premium UI</PageTitle>
+
+<div class="todo-container">
+    <div class="todo-card">
+        <div class="todo-header">
+            <h2>Task Master</h2>
+            <p class="todo-subtitle">Organize your day with precision.</p>
+        </div>
+
+        <div class="input-section">
+            <div class="input-wrapper">
+                <input type="text"
+                       @bind="currentTask"
+                       @bind:event="oninput"
+                       @onkeyup="HandleKeyUp"
+                       placeholder="What's your next focus?"
+                       class="todo-input"
+                       autocomplete="off" />
+            </div>
+            <button class="btn-add" @onclick="AddTask" disabled="@string.IsNullOrWhiteSpace(currentTask)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Add
+            </button>
+        </div>
+
+        @if (tasks.Count > 0)
+        {
+            <div class="progress-wrapper">
+                <div class="progress-text">@completedTasks.Count of @tasks.Count completed</div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: @($"{GetCompletionPercentage()}%")"></div>
+                </div>
+            </div>
+        }
+
+        <ul class="task-list">
+            @if (tasks.Count == 0)
+            {
+                <li class="empty-message animate-fade-in">
+                    <p class="empty-title">All tasks completed</p>
+                    <p class="empty-subtitle">Your slate is clean. Enjoy your day.</p>
+                </li>
+            }
+            else
+            {
+                @foreach (var task in tasks)
+                {
+                    var item = task;
+                    <li class="task-item animate-fade-in @(completedTasks.Contains(item) ? "is-completed" : "")">
+                        <div class="task-content" @onclick="() => ToggleComplete(item)">
+                            <div class="checkbox">
+                                @if (completedTasks.Contains(item))
+                                {
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                }
+                            </div>
+                            <span class="task-text">@item</span>
+                        </div>
+                        <button class="btn-delete" @onclick="() => DeleteTask(item)" title="Delete Task">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </li>
+                }
+            }
+        </ul>
+
+        @if (tasks.Count > 0)
+        {
+            <div class="card-footer">
+                <button class="btn-clear" @onclick="ClearAllTasks">Clear Dashboard</button>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --primary-light: #eef2ff;
+        --success: #10b981;
+        --bg-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        --card-bg: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+    }
+
+    .todo-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 85vh;
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--bg-gradient);
+        border-radius: 16px;
+        padding: 40px 24px;
+        box-sizing: border-box;
+        box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.1);
+    }
+
+    .todo-card {
+        background: var(--card-bg);
+        padding: 40px;
+        border-radius: 24px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        max-width: 480px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .todo-header {
+        text-align: left;
+        margin-bottom: 32px;
+    }
+
+    .todo-card h2 {
+        margin: 0 0 6px 0;
+        color: var(--text-main);
+        font-size: 1.85rem;
+        font-weight: 700;
+        letter-spacing: -0.75px;
+    }
+
+    .todo-subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .input-section {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 28px;
+    }
+
+    .input-wrapper {
+        flex: 1;
+    }
+
+    .todo-input {
+        width: 100%;
+        padding: 14px 18px;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        font-size: 1rem;
+        color: var(--text-main);
+        outline: none;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+        background: #f8fafc;
+    }
+
+        .todo-input:focus {
+            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+    .btn-add {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 0 24px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+    }
+
+        .btn-add:hover:not(:disabled) {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-add:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+    .progress-wrapper {
+        margin-bottom: 24px;
+        background-color: #f8fafc;
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+    }
+
+    .progress-text {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .progress-container {
+        width: 100%;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #4f46e5, #10b981);
+        border-radius: 10px;
+        transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .task-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 340px;
+        overflow-y: auto;
+    }
+
+        .task-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+    .task-item {
+        background-color: #ffffff;
+        border: 2px solid var(--border);
+        padding: 14px 16px;
+        border-radius: 14px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        transition: all 0.2s ease;
+    }
+
+        .task-item:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.03);
+        }
+
+    .task-content {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex: 1;
+        cursor: pointer;
+    }
+
+    .checkbox {
+        width: 22px;
+        height: 22px;
+        border: 2px solid #cbd5e1;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .task-item:hover .checkbox {
+        border-color: var(--primary);
+    }
+
+    .task-text {
+        color: var(--text-main);
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        word-break: break-word;
+    }
+
+    .task-item.is-completed {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+    }
+
+        .task-item.is-completed .checkbox {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .task-item.is-completed .task-text {
+            color: #94a3b8;
+            text-decoration: line-through;
+        }
+
+    .btn-delete {
+        background: transparent;
+        color: #94a3b8;
+        border: none;
+        padding: 6px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+
+        .btn-delete:hover {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+    .empty-message {
+        text-align: center;
+        padding: 40px 16px;
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        background: #fafafa;
+    }
+
+    .empty-title {
+        margin: 0 0 4px 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .empty-subtitle {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    .card-footer {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: center;
+    }
+
+    .btn-clear {
+        background-color: #fef2f2;
+        color: #ef4444;
+        border: 2px solid #fee2e2;
+        padding: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border-radius: 12px;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.2s ease;
+    }
+
+        .btn-clear:hover {
+            background-color: #fee2e2;
+            color: #dc2626;
+            transform: translateY(-1px);
+        }
+
+    .animate-fade-in {
+        animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+@code {
+    private string currentTask = string.Empty;
+    private List<string> tasks = new List<string>();
+    private HashSet<string> completedTasks = new HashSet<string>();
+
+    private void AddTask()
+    {
+        if (!string.IsNullOrWhiteSpace(currentTask))
+        {
+            var trimmedTask = currentTask.Trim();
+            if (!tasks.Contains(trimmedTask))
+            {
+                tasks.Add(trimmedTask);
+            }
+            currentTask = string.Empty;
+        }
+    }
+
+    private void HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddTask();
+        }
+    }
+
+    private void ToggleComplete(string task)
+    {
+        if (completedTasks.Contains(task))
+        {
+            completedTasks.Remove(task);
+        }
+        else
+        {
+            completedTasks.Add(task);
+        }
+    }
+
+    private void DeleteTask(string task)
+    {
+        tasks.Remove(task);
+        completedTasks.Remove(task);
+    }
+
+    private void ClearAllTasks()
+    {
+        tasks.Clear();
+        completedTasks.Clear();
+    }
+
+    private int GetCompletionPercentage()
+    {
+        if (tasks.Count == 0) return 0;
+        return (int)Math.Round((double)completedTasks.Count / tasks.Count * 100);
+    }
+}
